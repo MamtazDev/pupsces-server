@@ -21,12 +21,20 @@ app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
 
 
+// const db = mysql.createConnection({
+//   host: "localhost",
+//   user: "root",
+//   password: "P@ssw0rd",
+//   database: "dbvisio",
+// });
+
 const db = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  password: "P@ssw0rd",
-  database: "dbvisio",
+  host: "us-cluster-east-01.k8s.cleardb.net",
+  user: "b49b86da670de7",
+  password: "181b139a",
+  database: "heroku_4f9f12a2159b680",
 });
+
 
 db.connect(function (err) {
   if (err) {
@@ -507,6 +515,7 @@ app.get("/", (req, res) => {
   res.json("this is the backend");
   console.log("this is the backend");
 });
+
 app.get("/check-prerequisites/:studentNumber/:courseCode", async (req, res) => {
   const studentNumber = req.params.studentNumber;
   const courseCode = req.params.courseCode;
