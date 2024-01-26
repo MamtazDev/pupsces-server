@@ -1,5 +1,5 @@
 {
-  "name": "server",
+  "name": "node-heroku-cleardb",
   "version": "1.0.0",
   "type": "module",
   "main": "server.js",

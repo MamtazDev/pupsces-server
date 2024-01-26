@@ -2322,8 +2322,8 @@ app.post("/validate", async (req, res) => {
       }
       const sql =
         `INSERT INTO validate (` +
-        "`validated`, `student_number`, `grade_id`, `faculty_id`, `date_validated`, `course_id`" +
-        ") VALUES (?, ?, ?, ?, ?, ?)";
+        " `student_number`, `grade_id`, `faculty_id`, `date_validated`, `course_id`" +
+        ") VALUES ( ?, ?, ?, ?, ?)";
       const values = [
         true,
         studentNumber,
