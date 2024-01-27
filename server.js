@@ -20,7 +20,6 @@ app.use(bodyParser.json());
 
 app.use(express.urlencoded({ extended: true }));
 
-
 // const db = mysql.createConnection({
 //   host: "localhost",
 //   user: "root",
@@ -34,7 +33,6 @@ const db = mysql.createConnection({
   password: "181b139a",
   database: "heroku_4f9f12a2159b680",
 });
-
 
 db.connect(function (err) {
   if (err) {
