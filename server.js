@@ -85,8 +85,7 @@ app.post("/upload", upload.single("excelFile"), async (req, res) => {
       "Middle Name": "middle_name",
       "Last Name": "last_name",
       gender: "gender",
-      email: "email", // This maps 'Email' to 'email'
-      // Add other mappings as needed
+      email: "email",
     };
 
     const includedColumns = allColumns.filter((column) =>
