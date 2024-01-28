@@ -20,13 +20,6 @@ app.use(bodyParser.json());
 
 app.use(express.urlencoded({ extended: true }));
 
-// const db = mysql.createConnection({
-//   host: "localhost",
-//   user: "root",
-//   password: "P@ssw0rd",
-//   database: "dbvisio",
-// });
-
 const db = mysql.createConnection({
   host: "us-cluster-east-01.k8s.cleardb.net",
   user: "b49b86da670de7",
