@@ -28,7 +28,7 @@ app.use(express.urlencoded({ extended: true }));
 // });
 
 const db = mysql.createConnection({
-  host: "us-cluster-east-01.k8s.cleardb.net",
+  host: "us-cluster-east-01.k8scd.cleardb.net",
   user: "b49b86da670de7",
   password: "181b139a",
   database: "heroku_4f9f12a2159b680",
