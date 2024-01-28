@@ -75,9 +75,9 @@ app.post("/upload", upload.single("excelFile"), async (req, res) => {
       "status",
       "email",
       "school_year",
-      "student_password",
-      "program_id",
       "strand",
+      "program_id",
+      "student_password",
     ];
     const excelToDatabaseColumnMapping = {
       "Student Number": "student_number",
@@ -85,8 +85,8 @@ app.post("/upload", upload.single("excelFile"), async (req, res) => {
       "Middle Name": "middle_name",
       "Last Name": "last_name",
       gender: "gender",
-      email: "email", // This maps 'Email' to 'email'
-      // Add other mappings as needed
+      email: "email",
+      program: "program_id",
     };
 
     const includedColumns = allColumns.filter((column) =>
@@ -97,8 +97,8 @@ app.post("/upload", upload.single("excelFile"), async (req, res) => {
     console.log("excelToDatabaseColumnMapping:", excelToDatabaseColumnMapping);
 
     const sql = `
-  INSERT INTO students (student_number, first_name, middle_name, last_name, gender, birthdate, status, email, school_year, program_id, strand)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  INSERT INTO students (student_number, first_name, middle_name, last_name, gender, birthdate, status, email, school_year, strand, program_id, student_password)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
 `;
     for (const rowValues of data) {
       console.log("Row Values:", rowValues);
@@ -122,6 +122,7 @@ app.post("/upload", upload.single("excelFile"), async (req, res) => {
       const lastNameIndex = allColumns.indexOf("last_name");
       const genderIndex = allColumns.indexOf("gender");
       const emailIndex = allColumns.indexOf("email");
+      const programIndex = allColumns.indexOf("program_id");
 
       if (firstNameIndex !== -1) {
         values[firstNameIndex] = rowValues["First Name"];
@@ -138,7 +139,10 @@ app.post("/upload", upload.single("excelFile"), async (req, res) => {
         values[genderIndex] = rowValues["Gender"];
       }
       if (emailIndex !== -1) {
-        values[emailIndex] = rowValues["Email"];
+        values[emailIndex] = rowValues["email"];
+      }
+      if (programIndex !== -1) {
+        values[programIndex] = rowValues["program"];
       }
 
       console.log("Mapped Values:", values);
