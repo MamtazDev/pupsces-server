@@ -6,41 +6,39 @@ dotenv.config();
 
 const router = express.Router();
 
-router.get("/admin", (req, res) => {
+router.get("/admin", async (req, res) => {
   try {
     console.log("Received GET request to /admin");
 
     const q = "SELECT * FROM admin";
 
-    pool.query(q, (err, data) => {
-      if (err) {
-        console.error("Error querying the database:", err);
-        return res.status(500).json({ error: "Internal server error" });
-      }
+    try {
+      const data = await pool.query(q);
 
       console.log("SQL Query:", q);
       console.log("Query Result:", data);
 
       return res.json(data); // Return all admin data
-    });
+    } catch (error) {
+      console.error("Error querying the database:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
   } catch (error) {
     console.error("Error in /admin route:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
-router.get("/admin/:email", (req, res) => {
+
+router.get("/admin/:email", async (req, res) => {
   try {
     const email = req.params.email;
     console.log("Received email parameter:", email);
 
     const q = "SELECT * FROM admin WHERE admin_email = ?";
 
-    pool.query(q, [email], (err, data) => {
-      if (err) {
-        console.error("Error querying the database:", err);
-        return res.status(500).json({ error: "Internal server error" });
-      }
+    try {
+      const data = await pool.query(q, [email]);
 
       console.log("Query result:", data);
 
@@ -50,11 +48,15 @@ router.get("/admin/:email", (req, res) => {
       }
 
       return res.json(data[0]);
-    });
+    } catch (error) {
+      console.error("Error querying the database:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
   } catch (error) {
     console.error("Error in /admin/:email route:", error);
     res.status(500).json({ error: "Internal Server Error", details: error });
   }
 });
+
 
 export default router;
