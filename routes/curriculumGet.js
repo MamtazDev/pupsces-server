@@ -4,7 +4,10 @@ import { pool } from "../db.js";
 const router = express.Router();
 
 const executeQuery = (res, q, params, callback) => {
+  console.log("Executing query:", q);
+  console.log("Before executing query");
   pool.query(q, params, (err, data) => {
+    console.log("Inside callback after executing query");
     if (err) {
       console.error("Error executing query:", err);
       return res
@@ -12,6 +15,7 @@ const executeQuery = (res, q, params, callback) => {
         .json({ error: "Internal server error", details: err.message });
     }
 
+    console.log("Query result:", data);
     if (callback) {
       // If a callback is provided, invoke it with the data
       callback(data);
@@ -20,18 +24,37 @@ const executeQuery = (res, q, params, callback) => {
       res.json(data);
     }
   });
+  console.log("After executing query");
 };
 
+router.get("/courses", async (req, res) => {
+  console.log("Received GET request to /courses");
 
+  try {
+    const [courses] = await pool.query("SELECT * FROM courses");
+    return res.json(courses);
+  } catch (error) {
+    console.error("Error fetching courses from the database: ", error);
+    return res
+      .status(500)
+      .json({ error: "Internal Server Error", details: error.message });
+  }
+});
 
-router.get("/curriculum", (req, res) => {
+router.get("/curriculum", async (req, res) => {
   try {
     console.log("Received GET request to /curriculum");
 
-    const programId = req.query.programId;
+    const program_id = req.query.program_id;
     const year_started = req.query.year_started;
 
-    if (!programId || !year_started) {
+    console.log("req.query:", req.query);
+    console.log("program_id:", program_id);
+    console.log("year_started:", year_started);
+
+    if (!program_id || !year_started) {
+      console.log("program_id in if:", program_id);
+      console.log("year_started in if:", year_started);
       return res.status(400).json({
         error:
           "Both program_id and year_started are required in the query parameters.",
@@ -39,7 +62,16 @@ router.get("/curriculum", (req, res) => {
     }
 
     const q = "SELECT * FROM courses WHERE program_id = ? AND year_started = ?";
-    executeQuery(res, q, [programId, year_started]);
+
+    try {
+      const [courses] = await pool.query(q, [program_id, year_started]);
+      return res.json(courses);
+    } catch (error) {
+      console.error("Error fetching curriculum from the database: ", error);
+      return res
+        .status(500)
+        .json({ error: "Internal Server Error", details: error.message });
+    }
   } catch (error) {
     console.error("Error in /curriculum route:", error);
     res
@@ -47,6 +79,7 @@ router.get("/curriculum", (req, res) => {
       .json({ error: "Internal Server Error", details: error.message });
   }
 });
+
 
 router.get("/evalcurriculum", (req, res) => {
   try {
