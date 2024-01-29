@@ -3,12 +3,15 @@ import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
 import { pool } from "./db.js";
+import adminGet from "./routes/adminGet.js";
+import adminPut from "./routes/adminPut.js";
 import checkEmail from "./routes/checkEmail.js";
 import curriculumGet from "./routes/curriculumGet.js";
 import evaluateGet from "./routes/evaluateGet.js";
 import evaluatePost from "./routes/evaluatePost.js";
 import facultyGet from "./routes/facultyGet.js";
 import facultyPost from "./routes/facultyPost.js";
+import gradesDelete from "./routes/gradesDelete.js";
 import gradesGet from "./routes/gradesGet.js";
 import gradesPost from "./routes/gradesPost.js";
 import programsGet from "./routes/programsGet.js";
@@ -18,12 +21,11 @@ import sendEmail from "./routes/sendEmail.js";
 import studentGet from "./routes/studentGet.js";
 import studentPost from "./routes/studentPost.js";
 import studentPut from "./routes/studentPut.js";
+import updateGrades from "./routes/updateGrades.js";
 import updatePass from "./routes/updatePass.js";
 import uploadRouter from "./routes/upload.js";
 import validateGet from "./routes/validateGet.js";
 import validatePost from "./routes/validatePost.js";
-import adminGet from "./routes/adminGet.js";
-import adminPut from "./routes/adminPut.js";
 
 dotenv.config();
 
@@ -59,7 +61,8 @@ app.use("/api", validateGet);
 app.use("/api", validatePost);
 app.use("/api", adminGet);
 app.use("/api", adminPut);
-
+app.use("/api", gradesDelete);
+app.use("/api", updateGrades);
 
 pool.on("error", (err) => {
   console.error("MySQL Pool Error:", err);
