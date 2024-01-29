@@ -81,7 +81,7 @@ router.get("/curriculum", async (req, res) => {
 });
 
 
-router.get("/evalcurriculum", (req, res) => {
+router.get("/evalcurriculum", async (req, res) => {
   try {
     console.log("Received GET request to /evalcurriculum");
 
@@ -92,13 +92,26 @@ router.get("/evalcurriculum", (req, res) => {
     if (!programId || !year_started || !courseCode) {
       return res.status(400).json({
         error:
-          "Both program_id, course_type, and course_code are required in the query parameters.",
+          "Both program_id, year_started, and course_code are required in the query parameters.",
       });
     }
 
     const q =
       "SELECT * FROM courses WHERE program_id = ? AND year_started = ? AND course_code = ?";
-    executeQuery(res, q, [programId, year_started, courseCode]);
+
+    try {
+      const [courses] = await pool.query(q, [
+        programId,
+        year_started,
+        courseCode,
+      ]);
+      return res.json(courses);
+    } catch (error) {
+      console.error("Error fetching curriculum from the database: ", error);
+      return res
+        .status(500)
+        .json({ error: "Internal Server Error", details: error.message });
+    }
   } catch (error) {
     console.error("Error in /evalcurriculum route:", error);
     res
@@ -107,26 +120,25 @@ router.get("/evalcurriculum", (req, res) => {
   }
 });
 
-router.get("/curriculum/all", (req, res) => {
-  try {
-    const q = "SELECT * FROM courses";
-    executeQuery(res, q, []);
-  } catch (error) {
-    console.error("Error in /curriculum/all route:", error);
-    res
-      .status(500)
-      .json({ error: "Internal Server Error", details: error.message });
-  }
-});
 
-router.get("/curriculumyearsem", (req, res) => {
+router.get("/curriculumyearsem", async (req, res) => {
   try {
     const { year, semester } = req.query;
     console.log(
       `Received GET request to /curriculum for year ${year} and semester ${semester}`
     );
+
     const q = `SELECT * FROM courses WHERE course_year = ? AND course_sem = ?`;
-    executeQuery(res, q, [year, semester]);
+
+    try {
+      const [courses] = await pool.query(q, [year, semester]);
+      return res.json(courses);
+    } catch (error) {
+      console.error("Error fetching curriculum from the database: ", error);
+      return res
+        .status(500)
+        .json({ error: "Internal Server Error", details: error.message });
+    }
   } catch (error) {
     console.error("Error in /curriculumyearsem route:", error);
     res
@@ -135,24 +147,28 @@ router.get("/curriculumyearsem", (req, res) => {
   }
 });
 
-router.get("/curriculum/:courseCode", (req, res) => {
+
+router.get("/curriculum/:courseCode", async (req, res) => {
   try {
     const { courseCode } = req.params;
     console.log(`Received GET request for course code ${courseCode}`);
-    const q = `SELECT * FROM courses WHERE course_code= ?`;
-    pool.query(q, [courseCode], (err, data) => {
-      if (err) {
-        console.error("Error executing query:", err);
-        return res
-          .status(500)
-          .json({ error: "Internal server error", details: err });
-      }
-      if (data.length > 0) {
-        return res.json(data[0]);
+
+    const q = `SELECT * FROM courses WHERE course_code = ?`;
+
+    try {
+      const [courses] = await pool.query(q, [courseCode]);
+
+      if (courses.length > 0) {
+        return res.json(courses[0]);
       } else {
         return res.status(404).json({ message: "Course not found" });
       }
-    });
+    } catch (error) {
+      console.error("Error fetching curriculum from the database: ", error);
+      return res
+        .status(500)
+        .json({ error: "Internal Server Error", details: error.message });
+    }
   } catch (error) {
     console.error("Error in /curriculum/:courseCode route:", error);
     res
@@ -161,7 +177,8 @@ router.get("/curriculum/:courseCode", (req, res) => {
   }
 });
 
-router.get("/curriculum-prerequisite", (req, res) => {
+
+router.get("/curriculum-prerequisite", async (req, res) => {
   try {
     console.log("Received GET request to /curriculum-prerequisite");
     const programId = req.query.program_id;
@@ -170,7 +187,7 @@ router.get("/curriculum-prerequisite", (req, res) => {
     if (!programId || !year_started) {
       return res.status(400).json({
         error:
-          "Both program_id and course_type are required in the query parameters.",
+          "Both program_id and year_started are required in the query parameters.",
       });
     }
 
@@ -183,7 +200,21 @@ router.get("/curriculum-prerequisite", (req, res) => {
         AND program_id = ?;
     `;
 
-    executeQuery(res, q, [year_started, programId]);
+    try {
+      const [prerequisiteCourses] = await pool.query(q, [
+        year_started,
+        programId,
+      ]);
+      return res.json(prerequisiteCourses);
+    } catch (error) {
+      console.error(
+        "Error fetching curriculum prerequisites from the database: ",
+        error
+      );
+      return res
+        .status(500)
+        .json({ error: "Internal Server Error", details: error.message });
+    }
   } catch (error) {
     console.error("Error in /curriculum-prerequisite route:", error);
     res
@@ -192,7 +223,8 @@ router.get("/curriculum-prerequisite", (req, res) => {
   }
 });
 
-router.get("/curriculum-prerequisite-codes", (req, res) => {
+
+router.get("/curriculum-prerequisite-codes", async (req, res) => {
   try {
     const studentNumber = req.query.studentNumber;
 
@@ -207,7 +239,18 @@ router.get("/curriculum-prerequisite-codes", (req, res) => {
         AND TRIM(c.pre_requisite) != '';
     `;
 
-    executeQuery(res, q, []);
+    try {
+      const [prerequisiteCodes] = await pool.query(q, []);
+      return res.json(prerequisiteCodes);
+    } catch (error) {
+      console.error(
+        "Error fetching curriculum prerequisite codes from the database: ",
+        error
+      );
+      return res
+        .status(500)
+        .json({ error: "Internal Server Error", details: error.message });
+    }
   } catch (error) {
     console.error("Error in /curriculum-prerequisite-codes route:", error);
     res
@@ -216,7 +259,8 @@ router.get("/curriculum-prerequisite-codes", (req, res) => {
   }
 });
 
-router.get("/curriculum-prerequisite-codes-grades", (req, res) => {
+
+router.get("/curriculum-prerequisite-codes-grades", async (req, res) => {
   try {
     const studentNumber = req.query.studentNumber;
     const q = `
@@ -229,7 +273,18 @@ router.get("/curriculum-prerequisite-codes-grades", (req, res) => {
          );
     `;
 
-    executeQuery(res, q, [studentNumber]);
+    try {
+      const [prerequisiteCodesAndGrades] = await pool.query(q, [studentNumber]);
+      return res.json(prerequisiteCodesAndGrades);
+    } catch (error) {
+      console.error(
+        "Error fetching curriculum prerequisite codes and grades from the database: ",
+        error
+      );
+      return res
+        .status(500)
+        .json({ error: "Internal Server Error", details: error.message });
+    }
   } catch (error) {
     console.error(
       "Error in /curriculum-prerequisite-codes-grades route:",
@@ -241,7 +296,8 @@ router.get("/curriculum-prerequisite-codes-grades", (req, res) => {
   }
 });
 
-router.get("/curriculum-first-first", (req, res) => {
+
+router.get("/curriculum-first-first", async (req, res) => {
   try {
     console.log("Received GET request to /curriculum-first-first");
     const programId = req.query.program_id;
@@ -253,7 +309,18 @@ router.get("/curriculum-first-first", (req, res) => {
       WHERE program_id = ? AND year_started = ? AND course_year = 1 AND course_sem = 'First Semester'
     `;
 
-    executeQuery(res, q, [programId, year_started]);
+    try {
+      const [totalCreditUnits] = await pool.query(q, [programId, year_started]);
+      return res.json(totalCreditUnits[0]);
+    } catch (error) {
+      console.error(
+        "Error fetching total credit units from the database: ",
+        error
+      );
+      return res
+        .status(500)
+        .json({ error: "Internal Server Error", details: error.message });
+    }
   } catch (error) {
     console.error("Error in /curriculum-first-first route:", error);
     res
@@ -262,7 +329,7 @@ router.get("/curriculum-first-first", (req, res) => {
   }
 });
 
-router.get("/curriculumfirst-second", (req, res) => {
+router.get("/curriculumfirst-second", async (req, res) => {
   try {
     console.log("Received GET request to /first-second");
     const programId = req.query.program_id;
@@ -274,7 +341,18 @@ router.get("/curriculumfirst-second", (req, res) => {
       WHERE program_id = ? AND year_started = ? AND course_year = 1 AND course_sem = 'Second Semester'
     `;
 
-    executeQuery(res, q, [programId, year_started]);
+    try {
+      const [totalCreditUnits] = await pool.query(q, [programId, year_started]);
+      return res.json(totalCreditUnits[0]);
+    } catch (error) {
+      console.error(
+        "Error fetching total credit units from the database: ",
+        error
+      );
+      return res
+        .status(500)
+        .json({ error: "Internal Server Error", details: error.message });
+    }
   } catch (error) {
     console.error("Error in /first-second route:", error);
     res
@@ -283,7 +361,8 @@ router.get("/curriculumfirst-second", (req, res) => {
   }
 });
 
-router.get("/curriculumsecond-first", (req, res) => {
+
+router.get("/curriculumsecond-first", async (req, res) => {
   try {
     console.log("Received GET request to /second-first");
     const programId = req.query.program_id;
@@ -295,7 +374,18 @@ router.get("/curriculumsecond-first", (req, res) => {
       WHERE program_id = ? AND year_started = ? AND course_year = 2 AND course_sem = 'First Semester'
     `;
 
-    executeQuery(res, q, [programId, year_started]);
+    try {
+      const [totalCreditUnits] = await pool.query(q, [programId, year_started]);
+      return res.json(totalCreditUnits[0]);
+    } catch (error) {
+      console.error(
+        "Error fetching total credit units from the database: ",
+        error
+      );
+      return res
+        .status(500)
+        .json({ error: "Internal Server Error", details: error.message });
+    }
   } catch (error) {
     console.error("Error in /second-first route:", error);
     res
@@ -304,7 +394,7 @@ router.get("/curriculumsecond-first", (req, res) => {
   }
 });
 
-router.get("/curriculumsecond-second", (req, res) => {
+router.get("/curriculumsecond-second", async (req, res) => {
   try {
     console.log("Received GET request to /second-second");
     const programId = req.query.program_id;
@@ -316,7 +406,18 @@ router.get("/curriculumsecond-second", (req, res) => {
       WHERE program_id = ? AND year_started = ? AND course_year = 2 AND course_sem = 'Second Semester'
     `;
 
-    executeQuery(res, q, [programId, year_started]);
+    try {
+      const [totalCreditUnits] = await pool.query(q, [programId, year_started]);
+      return res.json(totalCreditUnits[0]);
+    } catch (error) {
+      console.error(
+        "Error fetching total credit units from the database: ",
+        error
+      );
+      return res
+        .status(500)
+        .json({ error: "Internal Server Error", details: error.message });
+    }
   } catch (error) {
     console.error("Error in /second-second route:", error);
     res
@@ -325,7 +426,8 @@ router.get("/curriculumsecond-second", (req, res) => {
   }
 });
 
-router.get("/curriculumthird-first", (req, res) => {
+
+router.get("/curriculumthird-first", async (req, res) => {
   try {
     console.log("Received GET request to /third-first");
     const programId = req.query.program_id;
@@ -337,7 +439,18 @@ router.get("/curriculumthird-first", (req, res) => {
       WHERE program_id = ? AND year_started = ? AND course_year = 3 AND course_sem = 'First Semester'
     `;
 
-    executeQuery(res, q, [programId, year_started]);
+    try {
+      const [totalCreditUnits] = await pool.query(q, [programId, year_started]);
+      return res.json(totalCreditUnits[0]);
+    } catch (error) {
+      console.error(
+        "Error fetching total credit units from the database: ",
+        error
+      );
+      return res
+        .status(500)
+        .json({ error: "Internal Server Error", details: error.message });
+    }
   } catch (error) {
     console.error("Error in /third-first route:", error);
     res
@@ -346,7 +459,7 @@ router.get("/curriculumthird-first", (req, res) => {
   }
 });
 
-router.get("/curriculumthird-second", (req, res) => {
+router.get("/curriculumthird-second", async (req, res) => {
   try {
     console.log("Received GET request to /third-second");
     const programId = req.query.program_id;
@@ -355,10 +468,21 @@ router.get("/curriculumthird-second", (req, res) => {
     const q = `
       SELECT SUM(credit_unit) as total_credit_units
       FROM courses
-       WHERE program_id = ? AND year_started = ? AND course_year = 3 AND course_sem = 'Second Semester'
+      WHERE program_id = ? AND year_started = ? AND course_year = 3 AND course_sem = 'Second Semester'
     `;
 
-    executeQuery(res, q, [programId, year_started]);
+    try {
+      const [totalCreditUnits] = await pool.query(q, [programId, year_started]);
+      return res.json(totalCreditUnits[0]);
+    } catch (error) {
+      console.error(
+        "Error fetching total credit units from the database: ",
+        error
+      );
+      return res
+        .status(500)
+        .json({ error: "Internal Server Error", details: error.message });
+    }
   } catch (error) {
     console.error("Error in /third-second route:", error);
     res
@@ -367,7 +491,8 @@ router.get("/curriculumthird-second", (req, res) => {
   }
 });
 
-router.get("/curriculumfourth-first", (req, res) => {
+
+router.get("/curriculumfourth-first", async (req, res) => {
   try {
     console.log("Received GET request to /fourth-first");
     const programId = req.query.program_id;
@@ -379,7 +504,18 @@ router.get("/curriculumfourth-first", (req, res) => {
       WHERE program_id = ? AND year_started = ? AND course_year = 4 AND course_sem = 'First Semester'
     `;
 
-    executeQuery(res, q, [programId, year_started]);
+    try {
+      const [totalCreditUnits] = await pool.query(q, [programId, year_started]);
+      return res.json(totalCreditUnits[0]);
+    } catch (error) {
+      console.error(
+        "Error fetching total credit units from the database: ",
+        error
+      );
+      return res
+        .status(500)
+        .json({ error: "Internal Server Error", details: error.message });
+    }
   } catch (error) {
     console.error("Error in /fourth-first route:", error);
     res
@@ -388,7 +524,7 @@ router.get("/curriculumfourth-first", (req, res) => {
   }
 });
 
-router.get("/curriculumfourth-second", (req, res) => {
+router.get("/curriculumfourth-second", async (req, res) => {
   try {
     console.log("Received GET request to /fourth-second");
     const programId = req.query.program_id;
@@ -400,7 +536,18 @@ router.get("/curriculumfourth-second", (req, res) => {
       WHERE program_id = ? AND year_started = ? AND course_year = 4 AND course_sem = 'Second Semester'
     `;
 
-    executeQuery(res, q, [programId, year_started]);
+    try {
+      const [totalCreditUnits] = await pool.query(q, [programId, year_started]);
+      return res.json(totalCreditUnits[0]);
+    } catch (error) {
+      console.error(
+        "Error fetching total credit units from the database: ",
+        error
+      );
+      return res
+        .status(500)
+        .json({ error: "Internal Server Error", details: error.message });
+    }
   } catch (error) {
     console.error("Error in /fourth-second route:", error);
     res
@@ -409,9 +556,10 @@ router.get("/curriculumfourth-second", (req, res) => {
   }
 });
 
-router.get("/curriculumsummer", (req, res) => {
+
+router.get("/curriculumsummer", async (req, res) => {
   try {
-    console.log("Received GET request to /fourth-second");
+    console.log("Received GET request to /curriculumsummer");
     const programId = req.query.program_id;
     const year_started = req.query.year_started;
 
@@ -421,9 +569,69 @@ router.get("/curriculumsummer", (req, res) => {
       WHERE program_id = ? AND year_started = ? AND course_sem = 'Summer Semester'
     `;
 
-    executeQuery(res, q, [programId, year_started]);
+    try {
+      const [totalCreditUnits] = await pool.query(q, [programId, year_started]);
+      return res.json(totalCreditUnits[0]);
+    } catch (error) {
+      console.error(
+        "Error fetching total credit units from the database: ",
+        error
+      );
+      return res
+        .status(500)
+        .json({ error: "Internal Server Error", details: error.message });
+    }
   } catch (error) {
-    console.error("Error in /fourth-second route:", error);
+    console.error("Error in /curriculumsummer route:", error);
+    res
+      .status(500)
+      .json({ error: "Internal Server Error", details: error.message });
+  }
+});
+
+router.get("/calculate_total_credit_units", async (req, res) => {
+  try {
+    // Extract program_id and course_type from the query parameters
+    const programId = req.query.program_id;
+    const year_started = req.query.year_started;
+
+    if (!programId || !year_started) {
+      return res.status(400).json({
+        error:
+          "Both program_id and course_type are required in the query parameters.",
+      });
+    }
+
+    const q =
+      "SELECT SUM(credit_unit) AS total_credit_units FROM courses WHERE program_id = ? AND year_started = ?";
+
+    try {
+      const [totalCreditUnits] = await pool.query(q, [programId, year_started]);
+
+      if (!totalCreditUnits[0]) {
+        // Handle the case where no data is returned
+        console.error("No data found for the given program and course type.");
+        return res.status(404).json({
+          error: "No data found for the given program and course type.",
+        });
+      }
+
+      const totalCreditUnitsValue = totalCreditUnits[0].total_credit_units || 0;
+
+      console.log("Total Credit Units:", totalCreditUnitsValue);
+
+      return res.json({ total_credit_units: totalCreditUnitsValue });
+    } catch (error) {
+      console.error(
+        "Error fetching total credit units from the database: ",
+        error
+      );
+      return res
+        .status(500)
+        .json({ error: "Internal Server Error", details: error.message });
+    }
+  } catch (error) {
+    console.error("Error in /calculate_total_credit_units route:", error);
     res
       .status(500)
       .json({ error: "Internal Server Error", details: error.message });
@@ -433,76 +641,46 @@ router.get("/curriculumsummer", (req, res) => {
 router.get(
   "/check-prerequisites/:studentNumber/:courseCode",
   async (req, res) => {
-    const studentNumber = req.params.studentNumber;
-    const courseCode = req.params.courseCode;
-
     try {
-      // Fetch the prerequisite course for the selected course
-      const [prerequisiteResult] = await pool.execute(
-        "SELECT pre_requisite FROM courses WHERE course_code = ?",
-        [courseCode]
-      );
+      const studentNumber = req.params.studentNumber;
+      const courseCode = req.params.courseCode;
 
-      // If there is no prerequisite, consider prerequisites as met
-      if (!prerequisiteResult[0]?.pre_requisite) {
-        return res.json({ prerequisitesMet: true });
+      try {
+        // Fetch the prerequisite course for the selected course
+        const [prerequisiteResult] = await pool.query(
+          "SELECT pre_requisite FROM courses WHERE course_code = ?",
+          [courseCode]
+        );
+
+        // If there is no prerequisite, consider prerequisites as met
+        if (!prerequisiteResult[0]?.pre_requisite) {
+          return res.json({ prerequisitesMet: true });
+        }
+
+        const prerequisiteCourseCode = prerequisiteResult[0].pre_requisite;
+
+        // Check if the student has grades for the prerequisite course
+        const [grades] = await pool.query(
+          "SELECT grade_id FROM grades WHERE course_code = ? AND student_number = ?",
+          [prerequisiteCourseCode, studentNumber]
+        );
+
+        // Return the result based on whether grades exist for the prerequisite
+        const prerequisitesMet = grades.length > 0;
+        res.json({ prerequisitesMet });
+      } catch (error) {
+        console.error("Error checking prerequisites:", error);
+        res.status(500).json({ error: "Internal server error" });
       }
-
-      const prerequisiteCourseCode = prerequisiteResult[0].pre_requisite;
-
-      // Check if the student has grades for the prerequisite course
-      const [grades] = await pool.execute(
-        "SELECT grade_id FROM grades WHERE course_code = ? AND student_number = ?",
-        [prerequisiteCourseCode, studentNumber]
-      );
-
-      // Return the result based on whether grades exist for the prerequisite
-      const prerequisitesMet = grades.length > 0;
-      res.json({ prerequisitesMet });
     } catch (error) {
-      console.error("Error checking prerequisites:", error);
-      res.status(500).json({ error: "Internal server error" });
+      console.error("Error in /check-prerequisites route:", error);
+      res
+        .status(500)
+        .json({ error: "Internal Server Error", details: error.message });
     }
   }
 );
 
-router.get("/calculate_total_credit_units", (req, res) => {
-  // Extract program_id and course_type from the query parameters
-  const programId = req.query.program_id;
-  const year_started = req.query.year_started;
 
-  if (!programId || !year_started) {
-    return res.status(400).json({
-      error:
-        "Both program_id and course_type are required in the query parameters.",
-    });
-  }
-
-  const q =
-    "SELECT SUM(credit_unit) AS total_credit_units FROM courses WHERE program_id = ? AND year_started = ?";
-
-  // Use a parameterized query to prevent SQL injection
-
-  pool.query(q, [programId, year_started], (err, data) => {
-    if (err) {
-      console.error("Error executing query:", err);
-      return res.status(500).json(err);
-    }
-
-    if (!data[0]) {
-      // Handle the case where no data is returned
-      console.error("No data found for the given program and course type.");
-      return res.status(404).json({
-        error: "No data found for the given program and course type.",
-      });
-    }
-
-    const totalCreditUnits = data[0].total_credit_units || 0;
-
-    console.log("Total Credit Units:", totalCreditUnits);
-
-    return res.json({ total_credit_units: totalCreditUnits });
-  });
-});
 
 export default router;
