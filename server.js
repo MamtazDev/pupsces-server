@@ -22,6 +22,8 @@ import updatePass from "./routes/updatePass.js";
 import uploadRouter from "./routes/upload.js";
 import validateGet from "./routes/validateGet.js";
 import validatePost from "./routes/validatePost.js";
+import adminGet from "./routes/adminGet.js";
+import adminPut from "./routes/adminPut.js";
 
 dotenv.config();
 
@@ -55,6 +57,9 @@ app.use("/api", programsGet);
 app.use("/api", programsPost);
 app.use("/api", validateGet);
 app.use("/api", validatePost);
+app.use("/api", adminGet);
+app.use("/api", adminPut);
+
 
 pool.on("error", (err) => {
   console.error("MySQL Pool Error:", err);
