@@ -3,33 +3,38 @@ import { pool } from "../db.js";
 
 const router = express.Router();
 
-router.put("/updatefaculty/:email", (req, res) => {
+router.put("/updatefaculty/:email", async (req, res) => {
   const email = req.params.email;
   const updatedFacultyData = req.body;
   console.log("Received PUT request for email:", email);
   console.log("Updated Faculty Data:", updatedFacultyData);
 
-  const updateQuery =
-    "UPDATE faculty SET faculty_id=?, faculty_fname=?, faculty_mname=?, faculty_lname=?, gender=?, birthdate=?, program_id=? WHERE email=?";
-  const values = [
-    updatedFacultyData.faculty_id,
-    updatedFacultyData.faculty_fname,
-    updatedFacultyData.faculty_mname,
-    updatedFacultyData.faculty_lname,
-    updatedFacultyData.gender,
-    updatedFacultyData.birthdate,
-    updatedFacultyData.program_id,
-    email,
-  ];
+  const connection = await pool.getConnection();
 
-  pool.query(updateQuery, values, (updateErr, updateResult) => {
-    if (updateErr) {
-      console.error("Error updating the database:", updateErr);
-      return res.status(500).json({
-        error: "Internal server error",
-        details: updateErr.message,
-      });
-    }
+  try {
+    // Start a transaction
+    await connection.beginTransaction();
+
+   const updateQuery =
+     "UPDATE faculty SET faculty_fname=?, faculty_mname=?, faculty_lname=?, gender=?, birthdate=?, email=?, program_id=? WHERE email=?";
+   const values = [
+     updatedFacultyData.faculty_fname,
+     updatedFacultyData.faculty_mname,
+     updatedFacultyData.faculty_lname,
+     updatedFacultyData.gender,
+     updatedFacultyData.birthdate,
+     updatedFacultyData.email, // Assuming email is part of the updated data
+     updatedFacultyData.program_id,
+     email,
+   ];
+
+  
+
+    // Execute the update query
+    const [updateResult] = await connection.query(updateQuery, values);
+
+    // Commit the transaction
+    await connection.commit();
 
     console.log("Update Query:", updateQuery);
     console.log("Update Query Parameters:", values);
@@ -40,7 +45,65 @@ router.put("/updatefaculty/:email", (req, res) => {
     } else {
       return res.status(404).json({ message: "Faculty not found" });
     }
-  });
+  } catch (updateErr) {
+    // Rollback the transaction in case of an error
+    await connection.rollback();
+
+    console.error("Error updating the database:", updateErr);
+    return res.status(500).json({
+      error: "Internal server error",
+      details: updateErr.message,
+    });
+  } finally {
+    // Release the connection back to the pool
+    connection.release();
+  }
+});
+
+
+router.put("/updatefacultypassword/:email", async (req, res) => {
+  const email = req.params.email;
+  const updatedFacultyData = req.body;
+  console.log("Received PUT request for email:", email);
+  console.log("Updated Faculty Data:", updatedFacultyData);
+
+  const connection = await pool.getConnection();
+
+  try {
+    // Start a transaction
+    await connection.beginTransaction();
+
+    const updateQuery = "UPDATE faculty SET  faculty_password= ? WHERE email=?";
+    const values = [updatedFacultyData.faculty_password, email];
+
+    // Execute the update query
+    const [updateResult] = await connection.query(updateQuery, values);
+
+    // Commit the transaction
+    await connection.commit();
+
+    console.log("Update Query:", updateQuery);
+    console.log("Update Query Parameters:", values);
+    console.log("Update Result:", updateResult);
+
+    if (updateResult.affectedRows > 0) {
+      return res.json({ message: "Faculty updated successfully" });
+    } else {
+      return res.status(404).json({ message: "Faculty not found" });
+    }
+  } catch (updateErr) {
+    // Rollback the transaction in case of an error
+    await connection.rollback();
+
+    console.error("Error updating the database:", updateErr);
+    return res.status(500).json({
+      error: "Internal server error",
+      details: updateErr.message,
+    });
+  } finally {
+    // Release the connection back to the pool
+    connection.release();
+  }
 });
 
 router.put("/faculty/:facultyId", async (req, res) => {

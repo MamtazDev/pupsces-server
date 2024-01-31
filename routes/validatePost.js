@@ -46,40 +46,39 @@ router.post("/validate", async (req, res) => {
           item.course_id,
         ]);
 
-        if (result && result.count > 0) {
+        if (result && result[0] && result[0].count > 0) {
           // Skip inserting duplicate record
           console.log("Duplicate record found. Skipping insertion.");
-          return;
+        } else {
+          const sql = `
+    INSERT INTO validate (
+      student_number, grade_id, faculty_id, date_validated, course_id
+    ) VALUES (?, ?, ?, ?, ?)
+  `;
+
+          console.log("Insertion SQL:", sql);
+          console.log("Values for insertion:", [
+            studentNumber,
+            gradeId,
+            item.faculty_id,
+            formattedDate,
+            item.course_id,
+          ]);
+
+          const values = [
+            studentNumber,
+            gradeId,
+            item.faculty_id,
+            formattedDate,
+            item.course_id,
+          ];
+
+          await pool.query(sql, values);
+          console.log("Data inserted successfully");
         }
-
-        const sql = `
-          INSERT INTO validate (
-            student_number, grade_id, faculty_id, date_validated, course_id
-          ) VALUES (?, ?, ?, ?, ?)
-        `;
-
-        console.log("Insertion SQL:", sql);
-        console.log("Values for insertion:", [
-          studentNumber,
-          gradeId,
-          item.faculty_id,
-          formattedDate,
-          item.course_id,
-        ]);
-
-        const values = [
-          studentNumber,
-          gradeId,
-          item.faculty_id,
-          formattedDate,
-          item.course_id,
-        ];
-
-        await pool.query(sql, values);
       })
     );
 
-    console.log("Data inserted successfully");
     res.status(201).json({ message: "Data inserted successfully" });
   } catch (error) {
     console.error("Error inserting data into the database: ", error);

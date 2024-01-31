@@ -118,20 +118,39 @@ router.put("/students/:studentNumber", async (req, res) => {
 router.put("/updatestudents/:studentNumber", async (req, res) => {
   const studentNumber = req.params.studentNumber;
   const updatedStudentData = req.body;
+  console.log("Received PUT request for studentNumber:", studentNumber);
+  console.log("Updated student Data:", updatedStudentData);
 
-  const updateQuery = "UPDATE students SET ? WHERE student_number = ?";
+  const connection = await pool.getConnection();
 
   try {
-    const updateResult = await pool.query(updateQuery, [
-      updatedStudentData,
+    // Start a transaction
+    await connection.beginTransaction();
+
+    const updateQuery =
+      "UPDATE students SET student_number=?, first_name=?, middle_name=?, last_name=?, gender=?, birthdate=?,status=?, email=?, program_id=?, strand=? WHERE student_number=?";
+    const values = [
+      updatedStudentData.student_number,
+      updatedStudentData.first_name,
+      updatedStudentData.middle_name,
+      updatedStudentData.last_name,
+      updatedStudentData.gender,
+      updatedStudentData.birthdate,
+      updatedStudentData.status,
+      updatedStudentData.email,
+      updatedStudentData.program_id,
+      updatedStudentData.strand,
       studentNumber,
-    ]);
+    ];
+
+    // Execute the update query
+    const [updateResult] = await connection.query(updateQuery, values);
+
+    // Commit the transaction
+    await connection.commit();
 
     console.log("Update Query:", updateQuery);
-    console.log("Update Query Parameters:", [
-      updatedStudentData,
-      studentNumber,
-    ]);
+    console.log("Update Query Parameters:", values);
     console.log("Update Result:", updateResult);
 
     if (updateResult.affectedRows > 0) {
@@ -139,10 +158,94 @@ router.put("/updatestudents/:studentNumber", async (req, res) => {
     } else {
       return res.status(404).json({ message: "Student not found" });
     }
-  } catch (err) {
-    console.error("Error updating the database:", err);
-    return res.status(500).json({ error: "Internal server error" });
+  } catch (updateErr) {
+    // Rollback the transaction in case of an error
+    await connection.rollback();
+
+    console.error("Error updating the database:", updateErr);
+    return res.status(500).json({
+      error: "Internal server error",
+      details: updateErr.message,
+    });
+  } finally {
+    // Release the connection back to the pool
+    connection.release();
   }
 });
+
+router.put("/updatestudentspassword/:studentNumber", async (req, res) => {
+  const studentNumber = req.params.studentNumber;
+  const updatedStudentData = req.body;
+  console.log("Received PUT request for studentNumber:", studentNumber);
+  console.log("Updated student Data:", updatedStudentData);
+
+  const connection = await pool.getConnection();
+
+  try {
+    // Start a transaction
+    await connection.beginTransaction();
+
+    const updateQuery =
+      "UPDATE students SET student_password=? WHERE student_number=?";
+    const values = [updatedStudentData.student_password, studentNumber];
+
+    // Execute the update query
+    const [updateResult] = await connection.query(updateQuery, values);
+
+    // Commit the transaction
+    await connection.commit();
+
+    console.log("Update Query:", updateQuery);
+    console.log("Update Query Parameters:", values);
+    console.log("Update Result:", updateResult);
+
+    if (updateResult.affectedRows > 0) {
+      return res.json({ message: "Student updated successfully" });
+    } else {
+      return res.status(404).json({ message: "Student not found" });
+    }
+  } catch (updateErr) {
+    // Rollback the transaction in case of an error
+    await connection.rollback();
+
+    console.error("Error updating the database:", updateErr);
+    return res.status(500).json({
+      error: "Internal server error",
+      details: updateErr.message,
+    });
+  } finally {
+    // Release the connection back to the pool
+    connection.release();
+  }
+});
+// router.put("/updatestudents/:studentNumber", async (req, res) => {
+//   const studentNumber = req.params.studentNumber;
+//   const updatedStudentData = req.body;
+
+//   const updateQuery = "UPDATE students SET ? WHERE student_number = ?";
+
+//   try {
+//     const updateResult = await pool.query(updateQuery, [
+//       updatedStudentData,
+//       studentNumber,
+//     ]);
+
+//     console.log("Update Query:", updateQuery);
+//     console.log("Update Query Parameters:", [
+//       updatedStudentData,
+//       studentNumber,
+//     ]);
+//     console.log("Update Result:", updateResult);
+
+//     if (updateResult.affectedRows > 0) {
+//       return res.json({ message: "Student updated successfully" });
+//     } else {
+//       return res.status(404).json({ message: "Student not found" });
+//     }
+//   } catch (err) {
+//     console.error("Error updating the database:", err);
+//     return res.status(500).json({ error: "Internal server error" });
+//   }
+// });
 
 export default router;
