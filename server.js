@@ -11,6 +11,7 @@ import evaluateGet from "./routes/evaluateGet.js";
 import evaluatePost from "./routes/evaluatePost.js";
 import facultyGet from "./routes/facultyGet.js";
 import facultyPost from "./routes/facultyPost.js";
+import facultyPut from "./routes/facultyPut.js";
 import gradesDelete from "./routes/gradesDelete.js";
 import gradesGet from "./routes/gradesGet.js";
 import gradesPost from "./routes/gradesPost.js";
@@ -63,6 +64,7 @@ app.use("/api", adminGet);
 app.use("/api", adminPut);
 app.use("/api", gradesDelete);
 app.use("/api", updateGrades);
+app.use("/api", facultyPut);
 
 pool.on("error", (err) => {
   console.error("MySQL Pool Error:", err);

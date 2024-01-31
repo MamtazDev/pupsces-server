@@ -1,14 +1,12 @@
-import dotenv from "dotenv";
 import express from "express";
 import { pool } from "../db.js";
-
-dotenv.config();
 
 const router = express.Router();
 
 router.put("/update-grades", async (req, res) => {
   try {
     const { studentNumber, course_id, grades, remarks } = req.body;
+
     if (
       !studentNumber ||
       !course_id ||
@@ -18,117 +16,91 @@ router.put("/update-grades", async (req, res) => {
       return res.status(400).json({ error: "Invalid request. Missing data." });
     }
 
+    // Check for existing entry
     const selectSql = `SELECT * FROM grades WHERE student_number = ? AND course_id = ?`;
     const selectValues = [studentNumber, course_id];
 
-    pool.query(selectSql, selectValues, async (selectErr, selectResult) => {
-      if (selectErr) {
-        console.error("Error checking for existing entry:", selectErr);
-        return res.status(500).json({
-          error: "Internal server error",
-          details: selectErr.message,
-        });
-      }
+    const [selectResult, selectFields] = await pool.execute(
+      selectSql,
+      selectValues
+    );
+    console.log("Select SQL:", selectSql);
+    console.log("Select Values:", selectValues);
 
-      if (selectResult.length > 0) {
-        const updateSql = `UPDATE grades SET grades = ?, remarks = ? WHERE student_number = ? AND course_id = ?`;
-        const updateValues = [grades, remarks, studentNumber, course_id];
+    if (selectResult.length > 0) {
+      // Update existing entry
+      const updateSql = `UPDATE grades SET grades = ?, remarks = ? WHERE student_number = ? AND course_id = ?`;
+      const updateValues = [grades, remarks, studentNumber, course_id];
 
-        pool.query(updateSql, updateValues, (updateErr) => {
-          if (updateErr) {
-            console.error("Error updating grades:", updateErr);
-            res.status(500).json({
-              error: "Internal server error",
-              details: updateErr.message,
-            });
-          } else {
-            console.log("Grades updated successfully");
-            res.status(200).json({ message: "Grades updated successfully" });
-          }
-        });
-      } else {
-        const insertSql = `INSERT INTO grades (student_number, course_id, grades, remarks) VALUES (?, ?, ?, ?)`;
-        const insertValues = [studentNumber, course_id, grades, remarks];
+      console.log("Update SQL:", updateSql);
+      console.log("Update Values:", updateValues);
 
-        pool.query(insertSql, insertValues, (insertErr) => {
-          if (insertErr) {
-            console.error("Error inserting new grades:", insertErr);
-            res.status(500).json({
-              error: "Internal server error",
-              details: insertErr.message,
-            });
-          } else {
-            console.log("New grades inserted successfully");
-            res
-              .status(200)
-              .json({ message: "New grades inserted successfully" });
-          }
-        });
-      }
-    });
+      await pool.execute(updateSql, updateValues);
+      console.log("Grades updated successfully");
+      return res.status(200).json({ message: "Grades updated successfully" });
+    } else {
+      // Insert new entry
+      const insertSql = `INSERT INTO grades (student_number, course_id, grades, remarks) VALUES (?, ?, ?, ?)`;
+      const insertValues = [studentNumber, course_id, grades, remarks];
+      console.log("Insert SQL:", insertSql);
+      console.log("Insert Values:", insertValues);
+
+      await pool.execute(insertSql, insertValues);
+      console.log("New grades inserted successfully");
+      return res
+        .status(200)
+        .json({ message: "New grades inserted successfully" });
+    }
   } catch (error) {
     console.error("Error updating/inserting grades:", error);
-    res
+    return res
       .status(500)
       .json({ error: "Internal server error", details: error.message });
   }
 });
 
-router.put("/grades/:studentNumber/:courseCode", (req, res) => {
+router.put("/grades/:studentNumber/:courseCode", async (req, res) => {
   try {
-    const course_id = req.params.course_id;
+    const courseCode = req.params.courseCode;
     const studentNumber = req.params.studentNumber;
     const updatedGrades = req.body.grades;
 
     console.log("PUT request received for studentNumber:", studentNumber);
-    console.log("Course Code:", course_id);
+    console.log("Course Code:", courseCode);
     console.log("Updated Grades:", updatedGrades);
 
-    const sql = `UPDATE grades SET grades = ? WHERE course_id = ? AND student_number = ?`;
+    const updateSql =
+      "UPDATE grades SET grades = ? WHERE course_code = ? AND student_number = ?";
+    const selectSql =
+      "SELECT * FROM grades WHERE course_code = ? AND student_number = ?";
 
-    console.log("SQL Query:", sql);
-    console.log("SQL Parameters:", [updatedGrades, course_id, studentNumber]);
+    console.log("UPDATE SQL Query:", updateSql);
+    console.log("UPDATE SQL Parameters:", [
+      updatedGrades,
+      courseCode,
+      studentNumber,
+    ]);
 
-    pool.query(sql, [updatedGrades, course_id, studentNumber], (err) => {
-      if (err) {
-        console.error("Error updating grades:", err);
-        res.status(500).json({
-          error: "Internal server error",
-          details: err.message,
-        });
-      } else {
-        const selectSql = `SELECT * FROM grades WHERE course_code = ? AND student_number = ?`;
+    // Execute the update query
+    await pool.query(updateSql, [updatedGrades, courseCode, studentNumber]);
 
-        console.log("SELECT SQL Query:", selectSql);
-        console.log("SELECT SQL Parameters:", [course_id, studentNumber]);
+    console.log("SELECT SQL Query:", selectSql);
+    console.log("SELECT SQL Parameters:", [courseCode, studentNumber]);
 
-        pool.query(
-          selectSql,
-          [course_id, studentNumber],
-          (selectErr, result) => {
-            if (selectErr) {
-              console.error("Error retrieving updated grades:", selectErr);
-              res.status(500).json({
-                error: "Internal server error",
-                details: selectErr.message,
-              });
-            } else {
-              if (result.length === 1) {
-                const updatedGradesData = {
-                  courseCode: result[0].course_code,
-                  grades: result[0].grades,
-                  studentNumber: result[0].student_number,
-                };
-                console.log("Updated Grades Data:", updatedGradesData);
-                res.status(200).json(updatedGradesData);
-              } else {
-                res.status(404).json({ error: "Grades not found" });
-              }
-            }
-          }
-        );
-      }
-    });
+    // Retrieve the updated grades
+    const [result] = await pool.query(selectSql, [courseCode, studentNumber]);
+
+    if (result.length === 1) {
+      const updatedGradesData = {
+        courseCode: result[0].course_code,
+        grades: result[0].grades,
+        studentNumber: result[0].student_number,
+      };
+      console.log("Updated Grades Data:", updatedGradesData);
+      res.status(200).json(updatedGradesData);
+    } else {
+      res.status(404).json({ error: "Grades not found" });
+    }
   } catch (error) {
     console.error("Error updating grades:", error);
     res

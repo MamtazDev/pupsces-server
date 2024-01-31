@@ -4,9 +4,10 @@ import { pool } from "../db.js";
 
 dotenv.config();
 
-const router = express.Router();
+const app = express.Router();
 
-router.post("/grades", async (req, res) => {
+app.post("/grades", async (req, res) => {
+  console.log("Received POST request to /grades");
   const q = `INSERT INTO grades (student_number, course_id, grades, remarks) VALUES (?,?,?,?)`;
   const values = [
     req.body.student_number,
@@ -15,27 +16,27 @@ router.post("/grades", async (req, res) => {
     req.body.remarks,
   ];
 
-  try {
-    const insertGrades = async () => {
-      return new Promise((resolve, reject) => {
-        pool.query(q, values, (err, data) => {
-          if (err) reject(err);
-          else resolve(data);
-        });
-      });
-    };
+  const insertGrades = async () => {
+    try {
+      const [result] = await pool.query(q, values);
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  };
 
-    await insertGrades();
+  try {
+    const insertedData = await insertGrades();
 
     console.log("Data inserted successfully");
+    // Output only the data
+    console.log("Inserted Data:", insertedData);
 
     res.status(201).json({ message: "Data inserted successfully" });
   } catch (error) {
     console.error("Error inserting data into the database: ", error);
-    res
-      .status(500)
-      .json({ error: "Internal Server Error", details: error.message });
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
-export default router;
+export default app;

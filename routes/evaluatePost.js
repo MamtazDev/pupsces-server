@@ -1,47 +1,58 @@
-import dotenv from "dotenv";
 import express from "express";
+import util from "util";
 import { pool } from "../db.js";
 
-dotenv.config();
-
 const router = express.Router();
+const queryAsync = pool.query.bind(pool);
 
 
-router.post("/evaluate", async (req, res) => {
+const insertEvaluate = async (values) => {
   const q =
-    "INSERT INTO evaluate(course_reco, evalcredit_unit, requiredcredit_unit, faculty_id, student_number,date_eval, eval_year, eval_sem) VALUES (?, ?, ?, ?,?, ?, ?,?)";
-  const values = [
-    req.body.course_reco,
-    req.body.evalcredit_unit,
-    req.body.requiredcredit_unit,
-    req.body.faculty_id,
-    req.body.student_number,
-    req.body.date_eval,
-    req.body.eval_year,
-
-    req.body.eval_sem,
-  ];
+    "INSERT INTO evaluate(course_reco, evalcredit_unit, requiredcredit_unit, faculty_id, student_number, date_eval, eval_year, eval_sem) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
   try {
-    const insertEvaluate = () => {
-      return new Promise((resolve, reject) => {
-        pool.query(q, values, (err, data) => {
-          if (err) reject(err);
-          else resolve(data);
-        });
-      });
-    };
+    const [result] = await queryAsync(q, values);
+    return result;
+  } catch (error) {
+    throw error;
+  }
+};
 
-    await insertEvaluate();
+router.post("/evaluate", async (req, res) => {
+  try {
+    const {
+      course_reco,
+      evalcredit_unit,
+      requiredcredit_unit,
+      faculty_id,
+      student_number,
+      date_eval,
+      eval_year,
+      eval_sem,
+    } = req.body;
+
+    const values = [
+      course_reco,
+      evalcredit_unit,
+      requiredcredit_unit,
+      faculty_id,
+      student_number,
+      date_eval,
+      eval_year,
+      eval_sem,
+    ];
+
+    await insertEvaluate(values);
 
     console.log("Data inserted successfully");
 
     res.status(201).json({ message: "Data inserted successfully" });
   } catch (error) {
     console.error("Error inserting data into the database: ", error);
-    res.status(500).json({ error: "Internal Server Error", details: error.message });
+    res
+      .status(500)
+      .json({ error: "Internal Server Error", details: error.message });
   }
 });
-
 
 export default router;

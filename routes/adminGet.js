@@ -8,17 +8,12 @@ const router = express.Router();
 
 router.get("/admin", async (req, res) => {
   try {
-    console.log("Received GET request to /admin");
-
     const q = "SELECT * FROM admin";
 
     try {
       const data = await pool.query(q);
 
-      console.log("SQL Query:", q);
-      console.log("Query Result:", data);
-
-      return res.json(data); // Return all admin data
+      return res.json(data.rows); // Return only the data from the result
     } catch (error) {
       console.error("Error querying the database:", error);
       res.status(500).json({ error: "Internal server error" });

@@ -3,29 +3,29 @@ import { pool } from "../db.js";
 
 const router = express.Router();
 
-const executeQuery = (res, q, params, callback) => {
-  console.log("Executing query:", q);
-  console.log("Before executing query");
-  pool.query(q, params, (err, data) => {
-    console.log("Inside callback after executing query");
-    if (err) {
-      console.error("Error executing query:", err);
-      return res
-        .status(500)
-        .json({ error: "Internal server error", details: err.message });
-    }
+// const executeQuery = (res, q, params, callback) => {
+//   console.log("Executing query:", q);
+//   console.log("Before executing query");
+//   pool.query(q, params, (err, data) => {
+//     console.log("Inside callback after executing query");
+//     if (err) {
+//       console.error("Error executing query:", err);
+//       return res
+//         .status(500)
+//         .json({ error: "Internal server error", details: err.message });
+//     }
 
-    console.log("Query result:", data);
-    if (callback) {
-      // If a callback is provided, invoke it with the data
-      callback(data);
-    } else {
-      // If no callback, simply send the response
-      res.json(data);
-    }
-  });
-  console.log("After executing query");
-};
+//     console.log("Query result:", data);
+//     if (callback) {
+//       // If a callback is provided, invoke it with the data
+//       callback(data);
+//     } else {
+//       // If no callback, simply send the response
+//       res.json(data);
+//     }
+//   });
+//   console.log("After executing query");
+// };
 
 router.get("/courses", async (req, res) => {
   console.log("Received GET request to /courses");
