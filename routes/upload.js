@@ -7,8 +7,6 @@ const router = express.Router();
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-
-
 router.post("/upload", upload.single("excelFile"), async (req, res) => {
   try {
     if (!req.file) {
@@ -20,15 +18,6 @@ router.post("/upload", upload.single("excelFile"), async (req, res) => {
     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
     const data = xlsx.utils.sheet_to_json(worksheet);
 
-    const mandatoryColumns = [
-      "student_number",
-      "first_name",
-      "middle_name",
-      "last_name",
-      "email",
-    ];
-
-    console.log(mandatoryColumns);
     const allColumns = [
       "student_number",
       "first_name",
@@ -43,6 +32,7 @@ router.post("/upload", upload.single("excelFile"), async (req, res) => {
       "program_id",
       "student_password",
     ];
+
     const excelToDatabaseColumnMapping = {
       "Student Number": "student_number",
       "First Name": "first_name",
@@ -54,88 +44,82 @@ router.post("/upload", upload.single("excelFile"), async (req, res) => {
     };
 
     const includedColumns = allColumns.filter((column) =>
-      // eslint-disable-next-line no-prototype-builtins
       data.every((row) => row.hasOwnProperty(column))
     );
 
-    console.log("excelToDatabaseColumnMapping:", excelToDatabaseColumnMapping);
-
     const sql = `
-  INSERT INTO students (student_number, first_name, middle_name, last_name, gender, birthdate, status, email, school_year, strand, program_id, student_password)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
-`;
+      INSERT INTO students (student_number, first_name, middle_name, last_name, gender, birthdate, status, email, school_year, strand, program_id, student_password)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
     for (const rowValues of data) {
-      console.log("Row Values:", rowValues);
-
-      const values = allColumns.map((column) => {
-        const lowerCaseColumn = column.toLowerCase();
-        const mappedValue =
-          excelToDatabaseColumnMapping[lowerCaseColumn] ||
-          excelToDatabaseColumnMapping[column];
-        return mappedValue ? rowValues[mappedValue] : rowValues[column];
-      });
-
-      const facultyNumberIndex = allColumns.indexOf("student_number");
-      if (facultyNumberIndex !== -1) {
-        values[facultyNumberIndex] = rowValues["Student Number"];
-      }
-
-      // Explicitly handle "First Name," "Middle Name," and "Last Name"
-      const firstNameIndex = allColumns.indexOf("first_name");
-      const middleNameIndex = allColumns.indexOf("middle_name");
-      const lastNameIndex = allColumns.indexOf("last_name");
-      const genderIndex = allColumns.indexOf("gender");
-      const emailIndex = allColumns.indexOf("email");
-      const programIndex = allColumns.indexOf("program_id");
-
-      if (firstNameIndex !== -1) {
-        values[firstNameIndex] = rowValues["First Name"];
-      }
-
-      if (middleNameIndex !== -1) {
-        values[middleNameIndex] = rowValues["Middle Name"];
-      }
-
-      if (lastNameIndex !== -1) {
-        values[lastNameIndex] = rowValues["Last Name"];
-      }
-      if (genderIndex !== -1) {
-        values[genderIndex] = rowValues["Gender"];
-      }
-      if (emailIndex !== -1) {
-        values[emailIndex] = rowValues["email"];
-      }
-      if (programIndex !== -1) {
-        values[programIndex] = rowValues["program"];
-      }
-
-      console.log("Mapped Values:", values);
-
-      console.log("First Name:", rowValues["First Name"]);
-      console.log("Middle Name:", rowValues["Middle Name"]);
-      console.log("Last Name:", rowValues["Last Name"]);
-      console.log("Email", rowValues["Email"]);
-      // Convert the birthdate to ISO format if it's available
-      const birthdateIndex = includedColumns.indexOf("birthdate");
-      if (birthdateIndex !== -1 && rowValues[birthdateIndex]) {
-        const birthdate = new Date(rowValues[birthdateIndex])
-          .toISOString()
-          .slice(0, 10);
-        rowValues[birthdateIndex] = birthdate;
-      }
-
-      await new Promise((resolve, reject) => {
-        pool.query(sql, values, (err, results) => {
-          if (err) {
-            console.error("Error inserting data:", err);
-            reject(err);
-          } else {
-            console.log("Data inserted:", results);
-            console.log("Inserted Row Values:", values);
-            resolve(results);
-          }
+      try {
+        const values = allColumns.map((column) => {
+          const lowerCaseColumn = column.toLowerCase();
+          const mappedValue =
+            excelToDatabaseColumnMapping[lowerCaseColumn] ||
+            excelToDatabaseColumnMapping[column];
+          return mappedValue ? rowValues[mappedValue] : rowValues[column];
         });
-      });
+
+        const facultyNumberIndex = allColumns.indexOf("student_number");
+        if (facultyNumberIndex !== -1) {
+          values[facultyNumberIndex] = rowValues["Student Number"];
+        }
+
+        const firstNameIndex = allColumns.indexOf("first_name");
+        const middleNameIndex = allColumns.indexOf("middle_name");
+        const lastNameIndex = allColumns.indexOf("last_name");
+        const genderIndex = allColumns.indexOf("gender");
+        const emailIndex = allColumns.indexOf("email");
+        const programIndex = allColumns.indexOf("program_id");
+
+        if (firstNameIndex !== -1) {
+          values[firstNameIndex] = rowValues["First Name"];
+        }
+
+        if (middleNameIndex !== -1) {
+          values[middleNameIndex] = rowValues["Middle Name"];
+        }
+
+        if (lastNameIndex !== -1) {
+          values[lastNameIndex] = rowValues["Last Name"];
+        }
+        if (genderIndex !== -1) {
+          values[genderIndex] = rowValues["Gender"];
+        }
+        if (emailIndex !== -1) {
+          values[emailIndex] = rowValues["email"];
+        }
+        if (programIndex !== -1) {
+          values[programIndex] = rowValues["program"];
+        }
+
+        const birthdateIndex = includedColumns.indexOf("birthdate");
+        if (birthdateIndex !== -1 && rowValues[birthdateIndex]) {
+          const birthdate = new Date(rowValues[birthdateIndex])
+            .toISOString()
+            .slice(0, 10);
+          rowValues[birthdateIndex] = birthdate;
+        }
+
+        const results = await new Promise((resolve, reject) => {
+          pool.query(sql, values, (err, results) => {
+            if (err) {
+              console.error("Error inserting data:", err);
+              reject(err);
+            } else {
+              console.log("Data inserted:", results);
+              console.log("Inserted Row Values:", values);
+              resolve(results);
+            }
+          });
+        });
+
+        console.log("Results:", results);
+      } catch (error) {
+        console.error("Error inserting row:", error);
+      }
     }
 
     return res

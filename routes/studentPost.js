@@ -64,23 +64,25 @@ router.post("/students/:studentNumber", async (req, res) => {
     studentNumber,
   ];
 
+   const insertStudent = async () => {
+     try {
+       const [result] = await pool.query(q, values);
+       return result;
+     } catch (error) {
+       throw error;
+     }
+   };
+
   try {
-    const updateStudent = async () => {
-      return new Promise((resolve, reject) => {
-        pool.query(q, values, (err, data) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve(data);
-          }
-        });
-      });
-    };
 
-    const result = await updateStudent();
-    console.log("Update Result:", result);
+     const insertedData = await insertStudent();
 
-    res.json({ success: true, result });
+     console.log("Data inserted successfully");
+     // Output only the data
+     console.log("Inserted Data:", insertedData);
+
+     res.status(201).json({ message: "Data inserted successfully" });
+    
   } catch (error) {
     console.error("Error during update:", error.message);
     res

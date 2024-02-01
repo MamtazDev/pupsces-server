@@ -37,28 +37,50 @@ router.post("/faculty", async (req, res) => {
 });
 
 router.post("/faculty/:facultyId", async (req, res) => {
+  const facultyId = req.params.facultyId;
+
+  // Format the birthdate value in 'YYYY-MM-DD' format
+  const formattedBirthdate = new Date(req.body.birthdate)
+    .toISOString()
+    .split("T")[0];
+
+  // Construct a SQL query to update faculty data
+  const q =
+    "UPDATE faculty SET gender=?, birthdate=?, program_id=? WHERE faculty_id=?";
+
+  const values = [
+    req.body.gender,
+    formattedBirthdate, // Use the formattedBirthdate variable
+    req.body.program_id,
+    facultyId,
+  ];
+
+  const updateFaculty = async () => {
+    try {
+      const [result] = await pool.query(q, values);
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  };
+
   try {
-    const facultyId = req.params.facultyId;
-    const { gender, birthdate, program_id } = req.body;
+    const updatedData = await updateFaculty();
 
-    // Validate faculty ID and other data here
+    console.log("Data updated successfully");
+    // Output only the data
+    console.log("Updated Data:", updatedData);
 
-    // Format the birthdate value in 'YYYY-MM-DD' format
-    const formattedBirthdate = new Date(birthdate).toISOString().split("T")[0];
-
-    // Construct a SQL query to update faculty data
-    const q =
-      "UPDATE faculty SET gender=?, birthdate=?, program_id=? WHERE faculty_id=?";
-
-    // Execute the SQL query with the provided parameters
-    await executeQuery(q, [gender, formattedBirthdate, program_id, facultyId]);
-
-    res.status(200).json({ message: "Faculty data updated successfully" });
+    res.status(200).json({ message: "Data updated successfully" });
   } catch (error) {
-    console.error("Error during update:", error);
-    res.status(500).json({ error: "Internal server error" });
+    console.error("Error during update:", error.message);
+    res.status(500).json({
+      error: "An error occurred while updating the faculty",
+      details: error.message,
+    });
   }
 });
+
 
 async function executeQuery(query, values) {
   return new Promise((resolve, reject) => {
