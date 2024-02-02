@@ -3,31 +3,52 @@ import mysql from "mysql2/promise";
 
 dotenv.config();
 
-const pool = mysql.createPool({
-  connectionLimit: 100,
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_DATABASE,
+// Validate required environment variables
+const requiredEnvVariables = [
+  "DB_HOST",
+  "DB_USER",
+  "DB_PASSWORD",
+  "DB_DATABASE",
+];
+for (const envVar of requiredEnvVariables) {
+  if (!process.env[envVar]) {
+    console.error(
+      `Missing or invalid value for ${envVar}. Please check your environment configuration.`
+    );
+    process.exit(1);
+  }
+}
+
+// Create the database connection pool
+let pool;
+try {
+  pool = mysql.createPool({
+    connectionLimit: 1000,
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_DATABASE,
+  });
+
+  console.log("Database connection pool created.");
+} catch (error) {
+  console.error("Error creating database connection pool:", error);
+  process.exit(1);
+}
+
+// Graceful shutdown when the application exits
+process.on("SIGINT", async () => {
+  try {
+    // Close the database connection pool
+    if (pool) {
+      await pool.end();
+      console.log("Database connection pool closed.");
+    }
+    process.exit(0);
+  } catch (error) {
+    console.error("Error closing database connection pool:", error);
+    process.exit(1);
+  }
 });
 
-const setMaxUserConnections = async () => {
-  try {
-    console.log("Attempting to set max_user_connections...");
-    const connection = await pool.getConnection();
-
-    // Execute the SQL command to set max_user_connections
-    const [results] = await connection.execute(
-      "SET GLOBAL max_user_connections = 20"
-    );
-
-    console.log("max_user_connections set successfully", results);
-
-    // Release the connection back to the pool
-    connection.release();
-  } catch (error) {
-    console.error("Error setting max_user_connections:", error);
-  }
-};
-
-export { pool, setMaxUserConnections };
+export { pool };
