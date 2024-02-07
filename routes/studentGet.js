@@ -1,3 +1,4 @@
+// studentsGet.js
 import dotenv from "dotenv";
 import express from "express";
 import { pool } from "../db.js"; 
@@ -7,6 +8,7 @@ dotenv.config();
 const router = express.Router();
 
 router.get("/students", async (req, res) => {
+  console.log('login method')
   try {
     console.log("Received GET request to /students");
 
@@ -18,19 +20,23 @@ router.get("/students", async (req, res) => {
     }
 
     console.log(
-      `Received GET request to /students with student number: ${studentNumber}`
+      `Processing GET request to /students with student number: ${studentNumber}`
     );
 
     // Validate the student number format using a regular expression
-    const studentNumberPattern = /^[0-9]{4}-[0-9]{5}-[A-Z]{2}-[0-9]$/;
-    if (!studentNumber.match(studentNumberPattern)) {
-      throw new Error("Invalid student number format");
-    }
+    // const studentNumberPattern = /^[0-9]{4}-[0-9]{5}-[A-Z]{2}-[0-9]$/;
+    // if (!studentNumber.match(studentNumberPattern)) {
+    //   throw new Error("Invalid student number format");
+    // }
+
+    console.log('student patart matched')
 
     // Construct a SQL query to select the student data for the given student number
     const q = "SELECT * FROM students WHERE student_number = ?";
 
+
     // Execute the SQL query with the provided student number as a parameter
+  
     const [data] = await pool.query(q, [studentNumber]);
 
     console.log("SQL Query:", q);
@@ -44,11 +50,14 @@ router.get("/students", async (req, res) => {
     return res.json(data[0]); // Assuming there should be only one matching student
   } catch (error) {
     console.error("Error processing /students request:", error.message);
-    return res
-      .status(500)
-      .json({ error: "Internal server error", details: error.message });
+    return res.status(500).json({
+      error: "Internal server error",
+      details: error.message,
+    });
   }
 });
+
+
 
 router.get("/students/all", async (req, res) => {
   try {

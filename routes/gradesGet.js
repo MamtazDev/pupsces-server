@@ -3,6 +3,24 @@ import { pool } from "../db.js";
 
 const router = express.Router();
 
+router.get("/all-grades", async (req, res) => {
+  try {
+    const q = "SELECT * FROM grades";
+    const [data] = await pool.query(q);
+
+    // Check if data is empty
+    if (data.length === 0) {
+      return res.status(404).json({
+        message: "No grades found in the database",
+      });
+    }
+
+    return res.json(data);
+  } catch (error) {
+    console.error("Error querying the database:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
 router.get("/grades", async (req, res) => {
   try {
     const studentNumber = req.query.studentNumber;

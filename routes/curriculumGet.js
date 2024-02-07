@@ -3,41 +3,18 @@ import { pool } from "../db.js";
 
 const router = express.Router();
 
-// const executeQuery = (res, q, params, callback) => {
-//   console.log("Executing query:", q);
-//   console.log("Before executing query");
-//   pool.query(q, params, (err, data) => {
-//     console.log("Inside callback after executing query");
-//     if (err) {
-//       console.error("Error executing query:", err);
-//       return res
-//         .status(500)
-//         .json({ error: "Internal server error", details: err.message });
-//     }
-
-//     console.log("Query result:", data);
-//     if (callback) {
-//       // If a callback is provided, invoke it with the data
-//       callback(data);
-//     } else {
-//       // If no callback, simply send the response
-//       res.json(data);
-//     }
-//   });
-//   console.log("After executing query");
-// };
-
-router.get("/courses", async (req, res) => {
-  console.log("Received GET request to /courses");
-
+router.get("/curriculum/all", async (req, res) => {
   try {
+    console.log("Received GET request to /curriculum/all");
+
     const [courses] = await pool.query("SELECT * FROM courses");
     return res.json(courses);
   } catch (error) {
     console.error("Error fetching courses from the database: ", error);
-    return res
-      .status(500)
-      .json({ error: "Internal Server Error", details: error.message });
+    return res.status(500).json({
+      error: "Internal Server Error",
+      details: "Error fetching courses from the database.",
+    });
   }
 });
 
@@ -68,17 +45,20 @@ router.get("/curriculum", async (req, res) => {
       return res.json(courses);
     } catch (error) {
       console.error("Error fetching curriculum from the database: ", error);
-      return res
-        .status(500)
-        .json({ error: "Internal Server Error", details: error.message });
+      return res.status(500).json({
+        error: "Internal Server Error",
+        details: "Error fetching curriculum from the database.",
+      });
     }
   } catch (error) {
     console.error("Error in /curriculum route:", error);
-    res
-      .status(500)
-      .json({ error: "Internal Server Error", details: error.message });
+    res.status(500).json({
+      error: "Internal Server Error",
+      details: "Error in /curriculum route.",
+    });
   }
 });
+
 
 
 router.get("/evalcurriculum", async (req, res) => {

@@ -4,7 +4,8 @@
   "type": "module",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "nodemon server.js"
   },
   "keywords": [],
   "author": "",
@@ -28,7 +29,7 @@
     "moment": "^2.29.4",
     "multer": "^1.4.5-lts.1",
     "mysql": "^2.18.1",
-    "mysql2": "^3.9.0",
+    "mysql2": "^3.9.1",
     "nock": "^13.3.3",
     "nodemailer": "^6.9.5",
     "path": "^0.12.7",

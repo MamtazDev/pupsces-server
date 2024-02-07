@@ -25,8 +25,18 @@ import studentPut from "./routes/studentPut.js";
 import updateGrades from "./routes/updateGrades.js";
 import updatePass from "./routes/updatePass.js";
 import uploadRouter from "./routes/upload.js";
+import uploadPostRouter from "./routes/uploadPost.js";
 import validateGet from "./routes/validateGet.js";
+import uploadGet from "./routes/uploadGet.js";
 import validatePost from "./routes/validatePost.js";
+
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 
 dotenv.config();
 
@@ -65,6 +75,15 @@ app.use("/api", adminPut);
 app.use("/api", gradesDelete);
 app.use("/api", updateGrades);
 app.use("/api", facultyPut);
+
+
+app.use("/api/message", uploadPostRouter);
+app.use("/api", uploadGet);
+
+app.use("/api/v1/uploads", express.static(`${__dirname}/public`));
+
+
+
 
 pool.on("error", (err) => {
   console.error("MySQL Pool Error:", err);

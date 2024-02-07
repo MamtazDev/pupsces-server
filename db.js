@@ -1,9 +1,11 @@
+// db.js
+
 import dotenv from "dotenv";
 import mysql from "mysql2/promise";
 
 dotenv.config();
 
-// Validate required environment variables
+// Validate required environment variables ...
 const requiredEnvVariables = [
   "DB_HOST",
   "DB_USER",
@@ -20,35 +22,30 @@ for (const envVar of requiredEnvVariables) {
 }
 
 // Create the database connection pool
-let pool;
-try {
-  pool = mysql.createPool({
-    connectionLimit: 1000,
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_DATABASE,
-  });
+const pool = mysql.createPool({
+  connectionLimit: 100,
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_DATABASE,
 
-  console.log("Database connection pool created.");
-} catch (error) {
-  console.error("Error creating database connection pool:", error);
-  process.exit(1);
-}
+ 
+});
 
-// Graceful shutdown when the application exits
-process.on("SIGINT", async () => {
-  try {
-    // Close the database connection pool
-    if (pool) {
-      await pool.end();
+console.log("Database connection pool created.");
+
+// Export the pool for use in other modules
+export { pool };
+
+// Gracefully shut down the pool when the application is terminating
+process.on("SIGINT", () => {
+  console.log("Received SIGINT. Closing database connections...");
+  pool.end(function (err) {
+    if (err) {
+      console.error("Error closing the database connection pool:", err);
+    } else {
       console.log("Database connection pool closed.");
     }
     process.exit(0);
-  } catch (error) {
-    console.error("Error closing database connection pool:", error);
-    process.exit(1);
-  }
+  });
 });
-
-export { pool };
