@@ -7,7 +7,7 @@ router.get("/messageData", async (req, res) => {
   try {
     console.log("Received GET request to /validateData");
 
-    // const studentNumber = req.query.studentNumber;
+    const programId = req.query.programId;
     // console.log("Student Number:", studentNumber);
 
     // if (!studentNumber) {
@@ -16,10 +16,15 @@ router.get("/messageData", async (req, res) => {
     //   });
     // }
 
-    const q = "SELECT * FROM message"
+    console.log("programId:", programId)
+
+    const q = "SELECT * FROM message WHERE programId = ?"
     console.log("Q", q)
     // Use async/await for better readability
-    const [data] = await pool.query(q);
+    const [data] = await pool.query(q,[programId], function (error, results, fields) {
+      if (error) throw error;
+      console.log(results); // Results of the query
+    });
 
     if (data.length === 0) {
       return res.status(200).json([]);

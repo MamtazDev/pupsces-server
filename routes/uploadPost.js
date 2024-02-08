@@ -33,7 +33,7 @@ const upload = multer({ storage });
 router.post("/upload", upload.single("image"), async (req, res) => {
 
   try {
-    const { name, inputMessage, email } = req.body;
+    const { name, inputMessage, email, programId } = req.body;
 
     let image = null
     if( req.file !== undefined){
@@ -51,8 +51,8 @@ router.post("/upload", upload.single("image"), async (req, res) => {
 
     // console.log("INSERT INTO message", name, inputMessage, req.file.filename, email)
 
-    const sql = 'INSERT INTO message (name, inputMessage, email, image) VALUES (?, ?, ?, ?)';
-    pool.query(sql, [ name, inputMessage, email, image ], (err, result) => {
+    const sql = 'INSERT INTO message (name, inputMessage, email, image, programId) VALUES (?, ?, ?, ?, ?)';
+    pool.query(sql, [ name, inputMessage, email, image, programId ], (err, result) => {
       if (err) {
         console.log('Data insertion err:', err);
       };
